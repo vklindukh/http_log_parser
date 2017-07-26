@@ -10,11 +10,11 @@ class Options(object):
 
         parser = OptionParser()
         parser.add_option("-f", "--file", dest="file",
-                      help="apache access log to process")
+                          help="apache access log to process")
         parser.add_option("-s", "--statistics", dest="statistics", default=self.stats_list,
-                      help="list of coma separated statistics to be calculated. Default is %s" % (self.stats_list))
+                          help="list of coma separated statistics to be calculated. Default is %s" % self.stats_list)
         parser.add_option("-q", action="store_false", dest="strip", default=True,
-                      help="include query string into URL. Strip by default")
+                          help="include query string into URL. Strip by default")
 
         (self.options, args) = parser.parse_args()
         if not self.options.file:
@@ -31,6 +31,7 @@ class Options(object):
 
     def strip_query_string(self):
         return self.options.strip
+
 
 class Parser(object):
     def __init__(self, stats_list, strip):
@@ -108,33 +109,34 @@ class Parser(object):
 
         if self.stats_list['timestat']:
             print "\n* The total number of requests made every minute:\n"
-            for k, v in sorted(self.counter['timestat'].items(), key=lambda x: x[0], reverse = False):
+            for k, v in sorted(self.counter['timestat'].items(), key=lambda x: x[0], reverse=False):
                 print "{:<20}  {}".format(k, v)
 
         if self.stats_list['top10']:
             print "\n* Top 10 requested pages (page - total requests):\n"
-            for k, v in sorted(self.counter['url'].items(), key=lambda x: x[1], reverse = True)[:10]:
+            for k, v in sorted(self.counter['url'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print "{:<50}  {}".format(k, v)
 
         if self.stats_list['top10unsuccess']:
             print "\n* Top 10 unsuccessful page requests (page - total requests):\n"
-            for k, v in sorted(self.counter['urlunsuccess'].items(), key=lambda x: x[1], reverse = True)[:10]:
+            for k, v in sorted(self.counter['urlunsuccess'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print "{:<50}  {}".format(k, v)
 
         if self.stats_list['top10ips']:
             print "\n* Top 10 IPs making the most requests (ip - total requests) with top 10 requested pages per IP:\n"
-            for k, v in sorted(self.counter['ips'].items(), key=lambda x: x[1], reverse = True)[:10]:
+            for k, v in sorted(self.counter['ips'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print "{:<55}  {}".format(k, v)
                 for i, j in sorted(self.counter['ippages'][k].items(), key=lambda x: x[1], reverse=True)[:10]:
                     print "     {:<50}  {}".format(i, j)
 
         if self.stats_list['success']:
-            print "\n* Percentage of successful requests (anything 2xx or 3xx): {:3.2f}%".\
-                format(float(self.counter['success'])/float(self.counter['total'])*100)
+            print "\n* Percentage of successful requests (anything 2xx or 3xx): {:3.2f}%". \
+                format(float(self.counter['success']) / float(self.counter['total']) * 100)
 
         if self.stats_list['unsuccess']:
-            print "\n* Percentage of unsuccessful requests (not 3xx or 3xx): {:3.2f}%".\
-                format(float(self.counter['unsuccess'])/float(self.counter['total'])*100)
+            print "\n* Percentage of unsuccessful requests (not 3xx or 3xx): {:3.2f}%". \
+                format(float(self.counter['unsuccess']) / float(self.counter['total']) * 100)
+
 
 def main():
     global STATS_FULL_LIST
@@ -147,6 +149,7 @@ def main():
     f.close()
 
     parser.print_stat()
+
 
 if __name__ == '__main__':
     main()
