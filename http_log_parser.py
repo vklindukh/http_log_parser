@@ -9,35 +9,45 @@ import re
 # list of statistics calculated and displayed by default.
 STATS_FULL_LIST = "top10,success,unsuccess,top10unsuccess,top10ips,timestat"
 
+# regex which extracts 4 fields from string:
+#   - client IP (named group IP)
+#   - date (named group DATE)
+#   - url (with args) (named group URK)
+#   - HTTP response code (named group CODE)
+# below is example of line which match regular expression
+# 10.0.79.88 - - [31/Oct/1994:23:51:30 +0000] "GET /system/set.php?secret=-JjAftwIBD HTTP/1.0" 204 37221
+#
+# you may want to update regex in case of different log format. keep the group naming for full compatibility
+REGEXP = "^(?P<IP>[0-9.]+)\s+-\s+-\s+\[(?P<DATE>\S+)\s+\S+\]\s+\"\S+\s+(?P<URL>\S+)\s+\S+\"\s+(?P<CODE>\d+)\s+\d+$"
 
 #
 # parse command-line options
 #
 class Options(object):
-    def __init__(self, stats_list):
-        self.stats_list = stats_list
-
+    def __init__(self):
+        global STATS_FULL_LIST
         parser = argparse.ArgumentParser()
         parser.add_argument("-f", "--file", dest="file",
                             help="apache access log to process")
-        parser.add_argument("-s", "--statistics", dest="statistics", default=self.stats_list,
-                            help="list of coma separated statistics to be calculated. Default is %s" % self.stats_list)
+        parser.add_argument("-s", "--statistics", dest="statistics", default=STATS_FULL_LIST,
+                            help="list of coma separated statistics to be calculated. Default is %s" % STATS_FULL_LIST)
         parser.add_argument("-q", action="store_false", dest="strip", default=True,
                             help="include query string into URL. Strip by default")
 
         self.args = parser.parse_args()
+
         if not self.args.file:
             parser.error("file name is required")
 
+        self.slist = dict(map(lambda x: [x, True], self.args.statistics.split(",")))
+
     #
-    # method returns dictionary, where the key is name of statistic (see STATS_FULL_LIST)
-    # statistic would be calculated if the value is True
+    # method returns dictionary, where the key is name of statistic requested
+    # and the value is True
+    # see STATS_FULL_LIST for full list of supported statistics
     #
     def get_stat_list(self):
-        slist = dict(map(lambda x: [x, False], self.stats_list.split(",")))
-        for s in self.args.statistics.split(","):
-            slist[s] = True
-        return slist
+        return self.slist
 
     def get_filename(self):
         return self.args.file
@@ -50,10 +60,12 @@ class Options(object):
 # apache-log parser. extracts metrics from log file, calculates statistics, display results
 #
 class Parser(object):
-    def __init__(self, stats_list, strip):
+    def __init__(self, slist, strip):
+        global REGEXP
         self.strip = strip
-        # stats_list varable contains
-        self.stats_list = stats_list
+        # slist varable contains list of statistics requested
+        self.slist = slist
+        # counters, one per each statistic requested
         self.counter = dict()
         self.counter['total'] = 0
         self.counter['success'] = 0
@@ -70,7 +82,7 @@ class Parser(object):
         #   - HTTP response code
         # example of correctly parsed string:
         # 10.0.79.88 - - [31/Oct/1994:23:51:30 +0000] "GET /system/set.php?secret=-JjAftwIBD HTTP/1.0" 204 37221
-        self.matcher = re.compile(r"^([0-9.]+)\s+-\s+-\s+\[(\S+)\s+\S+\]\s+\"\S+\s+(\S+)\s+\S+\"\s+(\d+)\s+\d+$")
+        self.matcher = re.compile(REGEXP)
 
     #
     # parser method. process single line, extract metrics and calculates statistics requested
@@ -88,20 +100,20 @@ class Parser(object):
 
         self.counter['total'] += 1
 
-        if self.stats_list['top10ips']:
+        if 'top10ips' in self.slist:
             self.process_list('ips', g.group(1))
             self.process_dict('ippages', g.group(1), url)
 
-        if self.stats_list['top10']:
+        if 'top10' in self.slist:
             self.process_list('url', url)
 
-        if self.stats_list['unsuccess']:
+        if 'top10unsuccess' in self.slist:
             self.process_list_unsuccess(url, g.group(4))
 
-        if self.stats_list['success'] or self.stats_list['unsuccess']:
+        if 'success' in self.slist or 'unsuccess' in self.slist:
             self.process_total(g.group(4))
 
-        if self.stats_list['timestat']:
+        if 'timestat' in self.slist:
             self.process_list('timestat', data_strip)
 
     #
@@ -161,40 +173,39 @@ class Parser(object):
     #
     def print_stat(self):
 
-        if self.stats_list['timestat']:
+        if 'timestat' in self.slist:
             print "\n* The total number of requests made every minute:\n"
             for k, v in sorted(self.counter['timestat'].items(), key=lambda x: x[0], reverse=False):
                 print "{:<20}  {}".format(k, v)
 
-        if self.stats_list['top10']:
+        if 'top10' in self.slist:
             print "\n* Top 10 requested pages (page - total requests):\n"
             for k, v in sorted(self.counter['url'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print "{:<50}  {}".format(k, v)
 
-        if self.stats_list['top10unsuccess']:
+        if 'top10unsuccess' in self.slist:
             print "\n* Top 10 unsuccessful page requests (page - total requests):\n"
             for k, v in sorted(self.counter['urlunsuccess'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print "{:<50}  {}".format(k, v)
 
-        if self.stats_list['top10ips']:
+        if 'top10ips' in self.slist:
             print "\n* Top 10 IPs making the most requests (ip - total requests) with top 10 requested pages per IP:\n"
             for k, v in sorted(self.counter['ips'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print "{:<55}  {}".format(k, v)
                 for i, j in sorted(self.counter['ippages'][k].items(), key=lambda x: x[1], reverse=True)[:10]:
                     print "     {:<50}  {}".format(i, j)
 
-        if self.stats_list['success']:
+        if 'success' in self.slist:
             print "\n* Percentage of successful requests (anything 2xx or 3xx): {:3.2f}%". \
                 format(float(self.counter['success']) / float(self.counter['total']) * 100)
 
-        if self.stats_list['unsuccess']:
+        if 'unsuccess' in self.slist:
             print "\n* Percentage of unsuccessful requests (not 3xx or 3xx): {:3.2f}%". \
                 format(float(self.counter['unsuccess']) / float(self.counter['total']) * 100)
 
 
 def main():
-    global STATS_FULL_LIST
-    options = Options(STATS_FULL_LIST)
+    options = Options()
 
     parser = Parser(options.get_stat_list(), options.strip_query_string())
     with open(options.get_filename()) as f:
