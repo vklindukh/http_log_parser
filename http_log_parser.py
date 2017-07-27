@@ -63,7 +63,13 @@ class Parser(object):
         self.counter['ips'] = dict()
         self.counter['ippages'] = dict()
         self.counter['timestat'] = dict()
-
+        # extract 4 fields from string:
+        #   - client IP
+        #   - date
+        #   - url (with args)
+        #   - HTTP response code
+        # example of correctly parsed string:
+        # 10.0.79.88 - - [31/Oct/1994:23:51:30 +0000] "GET /system/set.php?secret=-JjAftwIBD HTTP/1.0" 204 37221
         self.matcher = re.compile(r"^([0-9.]+)\s+-\s+-\s+\[(\S+)\s+\S+\]\s+\"\S+\s+(\S+)\s+\S+\"\s+(\d+)\s+\d+$")
 
     #
