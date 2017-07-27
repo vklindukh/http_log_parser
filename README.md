@@ -25,23 +25,24 @@ There are 2 classes:
 - class Parser(object) which performs all tasks: parse string, extract metrics, calculate and display final results
 
 Parser class keeps current statistic information in several objects:
-    Parser.counter['total'] - total requests counter
-    Parser.counter['success'] - successful requests counter
-    Parser.counter['unsuccess']  - unsuccessful requests counter
-    Parser.counter['url'] - dictionary which contents URL's (key) with counters (value)
-    Parser.counter['urlunsuccess'] - dictionary which contents only unsuccessful (nont 2xx/3xx) URL's with counters
-    Parser.counter['ips'] - dictionary which contents client IP's (key) with counters (value)
-    Parser.counter['ippages'] - dictionary which contents list of IPs with nested dictionaries (URL's with counters)
-    Parser.counter['timestat'] = dictionary which contents date's , with seconds removed, (key)
-                                 with number of requests (value)
+- Parser.counter['total'] - total requests counter
+- Parser.counter['success'] - successful requests counter
+- Parser.counter['unsuccess']  - unsuccessful requests counter
+- Parser.counter['url'] - dictionary which contents URL's (key) with counters (value)
+- Parser.counter['urlunsuccess'] - dictionary which contents only unsuccessful (nont 2xx/3xx) URL's with counters
+- Parser.counter['ips'] - dictionary which contents client IP's (key) with counters (value)
+- Parser.counter['ippages'] - dictionary which contents list of IPs with nested dictionaries (URL's with counters)
+- Parser.counter['timestat'] - dictionary which contents date's (with seconds removed) as a keym and number of requests as a value
 
-to display it use ```Parser.print_stat()```
+to display all statistics use ```Parser.print_stat()``` method
 
 The http_log_parser.py could prepare one or more (or all) statistics in time. You can specify the list of desired
 statistics using command line option ```-s``` (with comma separated list), for example
-```http_log_parser.py -f <PATH_TO_FILE> -s top10,success,success``` to get top 10 requested pages & Percentages
 
-To get all possible statistics just omit the ```-s``` option (or set option to
+```http_log_parser.py -f <PATH_TO_FILE> -s top10,success,success``` to get Top 10 requested pages & Percentages
+
+To get all possible statistics just omit the ```-s``` option, or set it to
+
 ```-s top10,success,unsuccess,top10unsuccess,top10ips,timestat```
 
 Additionally you may or may not strip query string parameter from the URL. The default behavior is to remove query string.
