@@ -1,4 +1,6 @@
-from optparse import OptionParser
+#!/usr/bin/env python
+
+import argparse
 import re
 
 STATS_FULL_LIST = "top10,success,unsuccess,top10unsuccess,top10ips,timestat"
@@ -8,29 +10,29 @@ class Options(object):
     def __init__(self, stats_list):
         self.stats_list = stats_list
 
-        parser = OptionParser()
-        parser.add_option("-f", "--file", dest="file",
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-f", "--file", dest="file",
                           help="apache access log to process")
-        parser.add_option("-s", "--statistics", dest="statistics", default=self.stats_list,
+        parser.add_argument("-s", "--statistics", dest="statistics", default=self.stats_list,
                           help="list of coma separated statistics to be calculated. Default is %s" % self.stats_list)
-        parser.add_option("-q", action="store_false", dest="strip", default=True,
+        parser.add_argument("-q", action="store_false", dest="strip", default=True,
                           help="include query string into URL. Strip by default")
 
-        (self.options, args) = parser.parse_args()
-        if not self.options.file:
+        self.args = parser.parse_args()
+        if not self.args.file:
             parser.error("file name is required")
 
     def get_stat_list(self):
         slist = dict(map(lambda x: [x, False], self.stats_list.split(",")))
-        for s in self.options.statistics.split(","):
+        for s in self.args.statistics.split(","):
             slist[s] = True
         return slist
 
     def get_filename(self):
-        return self.options.file
+        return self.args.file
 
     def strip_query_string(self):
-        return self.options.strip
+        return self.args.strip
 
 
 class Parser(object):
