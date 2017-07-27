@@ -27,7 +27,7 @@ class Options(object):
     def __init__(self):
         global STATS_FULL_LIST
         parser = argparse.ArgumentParser()
-        parser.add_argument("-f", "--file", dest="file",
+        parser.add_argument("-f", "--file", dest="file", required=True,
                             help="apache access log to process")
         parser.add_argument("-s", "--statistics", dest="statistics", default=STATS_FULL_LIST,
                             help="list of coma separated statistics to be calculated. Default is %s" % STATS_FULL_LIST)
@@ -35,9 +35,6 @@ class Options(object):
                             help="include query string into URL. Strip by default")
 
         self.args = parser.parse_args()
-
-        if not self.args.file:
-            parser.error("file name is required")
 
         self.slist = dict(map(lambda x: [x, True], self.args.statistics.split(",")))
 
@@ -93,25 +90,25 @@ class Parser(object):
             print "unable to parse string {}".format(l)
             return
 
-        url = g.group(3)
+        url = g.group('URL')
         if self.strip:
             url = url.split("?")[0]
-        data_strip = g.group(2)[:-3]
+        data_strip = g.group('DATE')[:-3]
 
         self.counter['total'] += 1
 
         if 'top10ips' in self.slist:
-            self.process_list('ips', g.group(1))
-            self.process_dict('ippages', g.group(1), url)
+            self.process_list('ips', g.group('IP'))
+            self.process_dict('ippages', g.group('IP'), url)
 
         if 'top10' in self.slist:
             self.process_list('url', url)
 
         if 'top10unsuccess' in self.slist:
-            self.process_list_unsuccess(url, g.group(4))
+            self.process_list_unsuccess(url, g.group('CODE'))
 
         if 'success' in self.slist or 'unsuccess' in self.slist:
-            self.process_total(g.group(4))
+            self.process_total(g.group('CODE'))
 
         if 'timestat' in self.slist:
             self.process_list('timestat', data_strip)
@@ -192,7 +189,7 @@ class Parser(object):
             print "\n* Top 10 IPs making the most requests (ip - total requests) with top 10 requested pages per IP:\n"
             for k, v in sorted(self.counter['ips'].items(), key=lambda x: x[1], reverse=True)[:10]:
                 print "{:<55}  {}".format(k, v)
-                for i, j in sorted(self.counter['ippages'][k].items(), key=lambda x: x[1], reverse=True)[:10]:
+                for i, j in sorted(self.counter['ippages'][k].items(), key=lambda x: x[1], reverse=True)[:5]:
                     print "     {:<50}  {}".format(i, j)
 
         if 'success' in self.slist:
